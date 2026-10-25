@@ -10,9 +10,14 @@ services:
       - certs:/etc/nginx/certs
       - vhost:/etc/nginx/vhost.d
       - html:/usr/share/nginx/html
-      - ./additional_config.conf:/etc/nginx/conf.d/additional_config.conf:ro
+      - ./etc/additional_config.conf:/etc/nginx/conf.d/additional_config.conf:ro
     networks:
       - proxy_network
+    logging:
+      driver: local
+      options:
+        max-size: "20m"
+        max-file: "10"
     restart: unless-stopped
 
   letsencrypt:

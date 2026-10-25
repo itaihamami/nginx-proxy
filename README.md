@@ -22,12 +22,47 @@ docker network create proxy_network
    ```env
    DEFAULT_EMAIL=your-email@example.com
    ```
-3. Make sure your custom Nginx configurations are set in `additional_config.conf` (e.g., upload file size limits, timeouts, header buffer sizes).
+3. Make sure your custom Nginx configurations are set in `etc/additional_config.conf` (e.g., upload file size limits, timeouts, header buffer sizes).
 4. Start the reverse proxy:
 
 ```bash
 docker compose up -d
 ```
+
+---
+
+## Optional: Cloudflare visitor IPs
+
+For Cloudflare-proxied domains, enable visitor IP restoration by adding this to
+`.env` (Linux):
+
+```env
+COMPOSE_FILE=docker-compose.yml:docker-compose.cloudflare.yml
+```
+
+Then apply it, recreating the proxy briefly:
+
+```bash
+mkdir -p var/cloudflare
+docker compose up -d
+docker compose exec nginx-proxy nginx -t
+```
+
+Compose reads this setting on subsequent commands, including updates and restarts.
+Without it, the base setup has no Cloudflare dependency. Remove the setting and
+run `docker compose up -d` to disable the integration.
+
+The startup script `etc/cloudflare-entrypoint.sh` fetches Cloudflare's IPv4/IPv6
+lists over verified HTTPS, validates them with Nginx, and atomically saves
+`var/cloudflare/trusted-proxies.conf`
+with a UTC timestamp. Only trusted Cloudflare connections can supply the visitor
+IP via `CF-Connecting-IP`; DNS-only domains keep their direct connection address.
+The generated list is excluded from Git. No extra packages are needed.
+
+Refreshes run on container starts/restarts, not Nginx reloads or a schedule. If a
+fetch fails, a validated cache up to seven days old is used; otherwise startup
+stops. First startup requires outbound HTTPS access. This restores client IPs;
+it does not restrict origin access to Cloudflare. See [Cloudflare's guidance](https://developers.cloudflare.com/support/troubleshooting/restoring-visitor-ips/restoring-original-visitor-ips/).
 
 ---
 
@@ -80,7 +115,7 @@ networks:
 
 ## ⚙️ Custom Global Nginx Directives
 
-Global Nginx overrides (like increased upload sizes, timeouts, and buffer sizes) are maintained in `additional_config.conf` and mounted directly into the proxy container:
+Global Nginx overrides (like increased upload sizes, timeouts, and buffer sizes) are maintained in `etc/additional_config.conf` and mounted directly into the proxy container:
 
 * **Upload Limit:** `client_max_body_size 64m;`
 * **Timeouts:** `proxy_read_timeout 300;` (5 minutes)

@@ -1,0 +1,11 @@
+# Optional: enable with COMPOSE_FILE in .env (see README).
+services:
+  nginx-proxy:
+    entrypoint: ["/bin/sh", "/usr/local/bin/cloudflare-entrypoint.sh"]
+    command: ["forego", "start", "-r"]
+    environment:
+      TRUST_DOWNSTREAM_PROXY: "false"
+    volumes:
+      - ./etc/cloudflare-entrypoint.sh:/usr/local/bin/cloudflare-entrypoint.sh:ro
+      - ./etc/cloudflare.conf:/etc/nginx/conf.d/cloudflare.conf:ro
+      - ./var/cloudflare:/var/lib/cloudflare

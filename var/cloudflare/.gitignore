@@ -1,0 +1,3 @@
+# Generated trust list and temporary refresh files stay on the deployment host.
+*
+!.gitignore
